@@ -135,14 +135,6 @@ curl -X POST http://localhost:8080/api/tables/users/rows \
 - Only SELECT queries are allowed via the custom query interface
 - **Do not expose this to the internet without proper security measures**
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-MIT License - see LICENSE file for details
-
 ## Roadmap
 
 Future enhancements:
@@ -152,8 +144,3 @@ Future enhancements:
 - [ ] Table creation/modification
 - [ ] Index management
 - [ ] Full-text search
-
-## Support
-
-For issues, questions, or contributions, please visit:
-https://github.com/rzhade3/sqlite-webgui
