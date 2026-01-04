@@ -1,0 +1,24 @@
+# Binaries
+sqlite-webgui
+sqlite-webgui.exe
+sqlite-webgui-*
+
+# Go
+*.o
+*.a
+*.so
+
+# Test databases
+*.db
+!sample.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
