@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -17,6 +19,19 @@ import (
 
 //go:embed internal/handlers/web/*
 var webFS embed.FS
+
+func openBrowser(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", url)
+	default: // linux, freebsd, openbsd, netbsd
+		cmd = exec.Command("xdg-open", url)
+	}
+	return cmd.Start()
+}
 
 func main() {
 	port := flag.String("port", "8080", "Port to run the server on")
@@ -67,9 +82,14 @@ func main() {
 	r.Handle("/*", http.FileServer(http.FS(webContent)))
 
 	addr := fmt.Sprintf(":%s", *port)
+	url := fmt.Sprintf("http://localhost%s", addr)
 	fmt.Printf("\nSQLite Web GUI is running!\n")
 	fmt.Printf("Database: %s\n", dbPath)
-	fmt.Printf("Open your browser: http://localhost%s\n\n", addr)
+	fmt.Printf("Open your browser: %s\n\n", url)
+
+	if err := openBrowser(url); err != nil {
+		log.Printf("Failed to open browser automatically: %v", err)
+	}
 
 	if err := http.ListenAndServe(addr, r); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
