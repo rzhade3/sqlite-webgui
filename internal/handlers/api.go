@@ -28,6 +28,12 @@ func (h *APIHandler) GetTables(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, tables)
 }
 
+func (h *APIHandler) GetMode(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]bool{
+		"readonly": h.db.IsReadOnly(),
+	})
+}
+
 func (h *APIHandler) GetTableSchema(w http.ResponseWriter, r *http.Request) {
 	tableName := chi.URLParam(r, "name")
 	
