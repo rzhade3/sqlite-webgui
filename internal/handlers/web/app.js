@@ -14,10 +14,22 @@ function app() {
         customQuery: '',
         queryResult: null,
         darkMode: false,
+        readonly: false,
 
         async init() {
             this.initDarkMode();
+            await this.loadMode();
             await this.loadTables();
+        },
+
+        async loadMode() {
+            try {
+                const response = await fetch('/api/mode');
+                const data = await response.json();
+                this.readonly = data.readonly;
+            } catch (error) {
+                console.error('Failed to load mode:', error);
+            }
         },
 
         initDarkMode() {

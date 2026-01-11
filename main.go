@@ -35,14 +35,19 @@ func openBrowser(url string) error {
 
 func main() {
 	port := flag.String("port", "8080", "Port to run the server on")
+	writable := flag.Bool("writable", false, "Enable write operations (default: false, read-only mode)")
 	flag.Parse()
 
 	args := flag.Args()
 	if len(args) == 0 {
-		fmt.Fprintf(os.Stderr, "Usage: %s [--port PORT] <database.db>\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "\nExample:\n")
-		fmt.Fprintf(os.Stderr, "  %s mydata.db\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s --port 3000 mydata.db\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [--port PORT] [--writable] <database.db>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "\nOptions:\n")
+		fmt.Fprintf(os.Stderr, "  --port PORT    Port to run the server on (default: 8080)\n")
+		fmt.Fprintf(os.Stderr, "  --writable     Enable write operations (default: read-only mode)\n")
+		fmt.Fprintf(os.Stderr, "\nExamples:\n")
+		fmt.Fprintf(os.Stderr, "  %s mydata.db                  # Read-only mode (safe)\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  %s --writable mydata.db       # Enable write operations\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  %s --port 3000 mydata.db      # Custom port, read-only\n", os.Args[0])
 		os.Exit(1)
 	}
 
@@ -52,7 +57,8 @@ func main() {
 		log.Fatalf("Database file does not exist: %s", dbPath)
 	}
 
-	db, err := database.New(dbPath)
+	readonly := !*writable
+	db, err := database.New(dbPath, readonly)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
@@ -66,13 +72,18 @@ func main() {
 	apiHandler := handlers.NewAPIHandler(db)
 
 	r.Route("/api", func(r chi.Router) {
+		r.Get("/mode", apiHandler.GetMode)
 		r.Get("/tables", apiHandler.GetTables)
 		r.Get("/tables/{name}/schema", apiHandler.GetTableSchema)
 		r.Get("/tables/{name}/data", apiHandler.GetTableData)
-		r.Post("/tables/{name}/rows", apiHandler.InsertRow)
-		r.Put("/tables/{name}/rows", apiHandler.UpdateRow)
-		r.Delete("/tables/{name}/rows", apiHandler.DeleteRow)
 		r.Post("/query", apiHandler.ExecuteQuery)
+
+		// Only register write endpoints if database is not in read-only mode
+		if !db.IsReadOnly() {
+			r.Post("/tables/{name}/rows", apiHandler.InsertRow)
+			r.Put("/tables/{name}/rows", apiHandler.UpdateRow)
+			r.Delete("/tables/{name}/rows", apiHandler.DeleteRow)
+		}
 	})
 
 	webContent, err := fs.Sub(webFS, "internal/handlers/web")
@@ -85,6 +96,11 @@ func main() {
 	url := fmt.Sprintf("http://localhost%s", addr)
 	fmt.Printf("\nSQLite Web GUI is running!\n")
 	fmt.Printf("Database: %s\n", dbPath)
+	if *writable {
+		fmt.Printf("Mode: READ-WRITE\n")
+	} else {
+		fmt.Printf("Mode: READ-ONLY\n")
+	}
 	fmt.Printf("Open your browser: %s\n\n", url)
 
 	if err := openBrowser(url); err != nil {

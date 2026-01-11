@@ -133,6 +133,10 @@ func (db *DB) GetTableData(tableName string, page, limit int) (*models.TableData
 }
 
 func (db *DB) InsertRow(tableName string, values map[string]interface{}) error {
+	if db.readonly {
+		return fmt.Errorf("database is in read-only mode")
+	}
+
 	var columns []string
 	var placeholders []string
 	var args []interface{}
@@ -155,6 +159,10 @@ func (db *DB) InsertRow(tableName string, values map[string]interface{}) error {
 }
 
 func (db *DB) UpdateRow(tableName string, pkColumn string, pkValue interface{}, values map[string]interface{}) error {
+	if db.readonly {
+		return fmt.Errorf("database is in read-only mode")
+	}
+
 	var setClauses []string
 	var args []interface{}
 
@@ -177,6 +185,10 @@ func (db *DB) UpdateRow(tableName string, pkColumn string, pkValue interface{}, 
 }
 
 func (db *DB) DeleteRow(tableName string, pkColumn string, pkValue interface{}) error {
+	if db.readonly {
+		return fmt.Errorf("database is in read-only mode")
+	}
+
 	query := fmt.Sprintf("DELETE FROM `%s` WHERE `%s` = ?", tableName, pkColumn)
 	_, err := db.conn.Exec(query, pkValue)
 	return err
@@ -185,8 +197,8 @@ func (db *DB) DeleteRow(tableName string, pkColumn string, pkValue interface{}) 
 func (db *DB) ExecuteQuery(query string) (*models.TableData, error) {
 	query = strings.TrimSpace(query)
 	
-	if !strings.HasPrefix(strings.ToUpper(query), "SELECT") {
-		return nil, fmt.Errorf("only SELECT queries are allowed")
+	if query == "" {
+		return nil, fmt.Errorf("query cannot be empty")
 	}
 
 	rows, err := db.conn.Query(query)
